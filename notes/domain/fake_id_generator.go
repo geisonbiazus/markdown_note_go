@@ -1,4 +1,4 @@
-package notes
+package domain
 
 type FakeIDGenerator struct {
 	NextID string

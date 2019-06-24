@@ -5,17 +5,20 @@ import (
 
 	"github.com/geisonbiazus/markdown_notes/cqrs"
 	"github.com/geisonbiazus/markdown_notes/notes/commands"
+	"github.com/geisonbiazus/markdown_notes/notes/domain"
 	"github.com/geisonbiazus/markdown_notes/notes/events"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCommandHandler(t *testing.T) {
 	t.Run("Creates a new note", func(t *testing.T) {
-		noteID := "Note ID"
-		idGenerator := NewFakeIdGenerator(noteID)
+		noteID := "ID"
 		store := cqrs.NewInMemoryEventStore()
 
-		handler := NewCommandHandler(store, idGenerator)
+		handler := NewCommandHandler(
+			store,
+			domain.NewNoteInteractor(domain.NewFakeIdGenerator(noteID)),
+		)
 
 		command := commands.NewCreateNoteCommand("Title", "Content")
 

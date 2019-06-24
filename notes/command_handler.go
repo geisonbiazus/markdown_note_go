@@ -7,16 +7,18 @@ import (
 )
 
 type CommandHandler struct {
-	eventStore  cqrs.EventStore
-	idGenerator IDGenerator
+	eventStore     cqrs.EventStore
+	noteInteractor *domain.NoteInteractor
 }
 
-func NewCommandHandler(eventStore cqrs.EventStore, idGenerator IDGenerator) *CommandHandler {
-	return &CommandHandler{eventStore: eventStore, idGenerator: idGenerator}
+func NewCommandHandler(
+	eventStore cqrs.EventStore, noteInteractor *domain.NoteInteractor,
+) *CommandHandler {
+	return &CommandHandler{eventStore, noteInteractor}
 }
 
 func (h *CommandHandler) CreateNote(command commands.CreateNoteCommand) {
-	_, evts := domain.CreateNote(h.idGenerator.Generate(), command.Title, command.Content)
+	evts := h.noteInteractor.CreateNote(command.Title, command.Content)
 
 	for _, event := range evts {
 		h.eventStore.AddEvent(event)
