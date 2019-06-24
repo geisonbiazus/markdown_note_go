@@ -19,7 +19,10 @@ func NewCommandHandler(
 
 func (h *CommandHandler) CreateNote(command commands.CreateNoteCommand) {
 	evts := h.noteInteractor.CreateNote(command.Title, command.Content)
+	h.publishEvents(evts)
+}
 
+func (h *CommandHandler) publishEvents(evts []cqrs.Event) {
 	for _, event := range evts {
 		h.eventStore.AddEvent(event)
 	}
