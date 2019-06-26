@@ -11,21 +11,67 @@ import (
 )
 
 func TestCommandHandler(t *testing.T) {
-	t.Run("Creates a new note", func(t *testing.T) {
-		noteID := "ID"
+	type fixture struct {
+		store       *cqrs.InMemoryEventStore
+		idGenerator *domain.FakeIDGenerator
+		handler     *CommandHandler
+	}
+
+	setup := func() *fixture {
 		store := cqrs.NewInMemoryEventStore()
+		idGenerator := domain.NewFakeIdGenerator("ID")
 
 		handler := NewCommandHandler(
 			store,
-			domain.NewNoteInteractor(domain.NewFakeIdGenerator(noteID)),
+			domain.NewNoteInteractor(idGenerator),
 		)
+		return &fixture{
+			store,
+			idGenerator,
+			handler,
+		}
+	}
 
-		command := commands.NewCreateNoteCommand("Title", "Content")
+	t.Run("CreateNote", func(t *testing.T) {
+		t.Run("Creates a new note", func(t *testing.T) {
+			noteID := "ID"
+			f := setup()
 
-		handler.CreateNote(command)
+			f.idGenerator.NextID = noteID
 
-		assert.Equal(t, []cqrs.Event{
-			events.NoteCreatedEvent{ID: noteID, Title: "Title", Content: "Content"},
-		}, store.Events)
+			f.handler.CreateNote(
+				commands.CreateNoteCommand{Title: "Title", Content: "Content"},
+			)
+
+			assert.Equal(t, []cqrs.Event{
+				events.NoteCreatedEvent{ID: noteID, Title: "Title", Content: "Content"},
+			}, f.store.Events)
+		})
+	})
+
+	t.Run("UpdateNote", func(t *testing.T) {
+		t.Run("Updates a note", func(t *testing.T) {
+			noteID := "NoteID"
+
+			f := setup()
+			f.idGenerator.NextID = noteID
+
+			f.handler.CreateNote(
+				commands.CreateNoteCommand{Title: "Title", Content: "Content"},
+			)
+
+			f.handler.UpdateNote(
+				commands.UpdateNoteCommand{
+					ID:      noteID,
+					Title:   "NewTitle",
+					Content: "NewContent",
+				},
+			)
+
+			assert.Equal(t, []cqrs.Event{
+				events.NoteCreatedEvent{ID: noteID, Title: "Title", Content: "Content"},
+				events.NoteUpdatedEvent{ID: noteID, Title: "NewTitle", Content: "NewContent"},
+			}, f.store.Events)
+		})
 	})
 }
