@@ -4,10 +4,10 @@ import (
 	"github.com/geisonbiazus/markdown_notes/cqrs"
 	"github.com/geisonbiazus/markdown_notes/notes/commands"
 	"github.com/geisonbiazus/markdown_notes/notes/domain"
-	"github.com/geisonbiazus/markdown_notes/notes/events"
 )
 
 type CommandHandler struct {
+	repo           *EventBasedNoteRepo
 	eventStore     cqrs.EventStore
 	noteInteractor *domain.NoteInteractor
 }
@@ -15,7 +15,7 @@ type CommandHandler struct {
 func NewCommandHandler(
 	eventStore cqrs.EventStore, noteInteractor *domain.NoteInteractor,
 ) *CommandHandler {
-	return &CommandHandler{eventStore, noteInteractor}
+	return &CommandHandler{NewEventBasedNoteRepo(eventStore), eventStore, noteInteractor}
 }
 
 func (h *CommandHandler) CreateNote(cmd commands.CreateNoteCommand) {
@@ -24,7 +24,7 @@ func (h *CommandHandler) CreateNote(cmd commands.CreateNoteCommand) {
 }
 
 func (h *CommandHandler) UpdateNote(cmd commands.UpdateNoteCommand) {
-	note := h.loadNote(cmd.ID)
+	note := h.repo.GetByID(cmd.ID)
 	evts := h.noteInteractor.UpdateNote(note, cmd.Title, cmd.Content)
 	h.publishEvents(evts)
 }
@@ -33,11 +33,4 @@ func (h *CommandHandler) publishEvents(evts []cqrs.Event) {
 	for _, event := range evts {
 		h.eventStore.AddEvent(event)
 	}
-}
-
-func (h *CommandHandler) loadNote(id string) domain.Note {
-	store := h.eventStore.(*cqrs.InMemoryEventStore)
-	evt := store.Events[0].(events.NoteCreatedEvent)
-
-	return domain.Note{ID: evt.ID, Title: evt.Title, Content: evt.Content}
 }
