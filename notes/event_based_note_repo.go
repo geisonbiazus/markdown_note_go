@@ -14,9 +14,22 @@ func NewEventBasedNoteRepo(eventStore cqrs.EventStore) *EventBasedNoteRepo {
 	return &EventBasedNoteRepo{eventStore}
 }
 
-func (r *EventBasedNoteRepo) GetByID(id string) domain.Note {
-	store := r.eventStore.(*cqrs.InMemoryEventStore)
-	evt := store.Events[0].(events.NoteCreatedEvent)
+func (r *EventBasedNoteRepo) GetNoteByID(id string) domain.Note {
+	evts, _ := r.eventStore.ReadEvents()
 
-	return domain.Note{ID: evt.ID, Title: evt.Title, Content: evt.Content}
+	note := domain.EmptyNote
+
+	for _, evt := range evts {
+		switch event := evt.(type) {
+		case events.NoteCreatedEvent:
+			note.ID = event.ID
+			note.Title = event.Title
+			note.Content = event.Content
+		case events.NoteUpdatedEvent:
+			note.Title = event.Title
+			note.Content = event.Content
+		}
+	}
+
+	return note
 }

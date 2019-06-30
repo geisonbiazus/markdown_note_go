@@ -5,3 +5,5 @@ type Note struct {
 	Title   string
 	Content string
 }
+
+var EmptyNote = Note{}

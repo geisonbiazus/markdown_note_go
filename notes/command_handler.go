@@ -24,7 +24,7 @@ func (h *CommandHandler) CreateNote(cmd commands.CreateNoteCommand) {
 }
 
 func (h *CommandHandler) UpdateNote(cmd commands.UpdateNoteCommand) {
-	note := h.repo.GetByID(cmd.ID)
+	note := h.repo.GetNoteByID(cmd.ID)
 	evts := h.noteInteractor.UpdateNote(note, cmd.Title, cmd.Content)
 	h.publishEvents(evts)
 }
