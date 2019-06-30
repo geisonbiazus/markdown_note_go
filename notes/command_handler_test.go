@@ -22,7 +22,7 @@ func TestCommandHandler(t *testing.T) {
 		idGenerator := domain.NewFakeIdGenerator("ID")
 
 		handler := NewCommandHandler(
-			store,
+			NewEventBasedNoteRepo(store),
 			domain.NewNoteInteractor(idGenerator),
 		)
 		return &fixture{

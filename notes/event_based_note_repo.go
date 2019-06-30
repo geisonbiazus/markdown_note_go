@@ -13,6 +13,16 @@ func NewEventBasedNoteRepo(eventStore cqrs.EventStore) *EventBasedNoteRepo {
 	return &EventBasedNoteRepo{eventStore}
 }
 
+func (r *EventBasedNoteRepo) PublishEvents(evts []cqrs.Event) error {
+	for _, evt := range evts {
+		err := r.eventStore.AddEvent(evt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (r *EventBasedNoteRepo) GetNoteByID(id string) domain.Note {
 	evts, _ := r.eventStore.ReadEvents()
 
