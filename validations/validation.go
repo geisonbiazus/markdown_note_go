@@ -1,6 +1,6 @@
-package commands
+package validations
 
-type ValidationResult struct {
+type Result struct {
 	Valid  bool
 	Errors []Error
 }
@@ -26,8 +26,8 @@ func (v *Validator) ValidateRequired(field, value string) {
 	}
 }
 
-func (v *Validator) Result() ValidationResult {
-	return ValidationResult{
+func (v *Validator) Result() Result {
+	return Result{
 		Valid:  len(v.Errors) == 0,
 		Errors: v.Errors,
 	}

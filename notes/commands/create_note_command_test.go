@@ -2,20 +2,22 @@ package commands
 
 import (
 	"testing"
+
+	"github.com/geisonbiazus/markdown_notes/validations/validationstest"
 )
 
 func TestCreateNoteCommand(t *testing.T) {
 	t.Run("Validations", func(t *testing.T) {
 		t.Run("Valid Command", func(t *testing.T) {
 			cmd := validCreateNoteCommand()
-			assertValid(t, cmd.Validate())
+			validationstest.AssertValid(t, cmd.Validate())
 		})
 
 		t.Run("Title is required", func(t *testing.T) {
 			cmd := validCreateNoteCommand()
 			cmd.Title = ""
 
-			assertValidationError(t, cmd.Validate(), "Title", "REQUIRED")
+			validationstest.AssertValidationError(t, cmd.Validate(), "Title", "REQUIRED")
 		})
 	})
 }
