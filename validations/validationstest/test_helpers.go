@@ -17,13 +17,10 @@ func AssertValid(t *testing.T, r validations.Result) {
 
 func AssertValidationError(t *testing.T, r validations.Result, field, errType string) {
 	t.Helper()
-	assert.Equal(t, validations.Result{
-		Valid: false,
-		Errors: []validations.Error{
-			validations.Error{
-				Field: "Title",
-				Type:  "REQUIRED",
-			},
+	assert.Contains(t, r.Errors,
+		validations.Error{
+			Field: field,
+			Type:  errType,
 		},
-	}, r)
+	)
 }
