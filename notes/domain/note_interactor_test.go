@@ -24,7 +24,7 @@ func TestNoteInteractor(t *testing.T) {
 	}
 
 	t.Run("CreateNote", func(t *testing.T) {
-		t.Run("generates a NoteCreatedEvent", func(t *testing.T) {
+		t.Run("Generates a NoteCreatedEvent", func(t *testing.T) {
 			id := "ID"
 			title := "Title"
 			content := "Content"
@@ -32,17 +32,32 @@ func TestNoteInteractor(t *testing.T) {
 			f := setup()
 			f.idGenerator.NextID = id
 
+			_, evts := f.interactor.CreateNote(title, content)
+
 			assert.Equal(t,
 				[]cqrs.Event{
 					events.NoteCreatedEvent{ID: id, Title: title, Content: content},
 				},
-				f.interactor.CreateNote(title, content),
+				evts,
 			)
+		})
+
+		t.Run("Returns the created Note", func(t *testing.T) {
+			id := "ID"
+			title := "Title"
+			content := "Content"
+
+			f := setup()
+			f.idGenerator.NextID = id
+
+			note, _ := f.interactor.CreateNote(title, content)
+
+			assert.Equal(t, Note{ID: id, Title: title, Content: content}, note)
 		})
 	})
 
 	t.Run("UpdateNote", func(t *testing.T) {
-		t.Run("generates a NoteUpdatedEvent", func(t *testing.T) {
+		t.Run("Generates a NoteUpdatedEvent", func(t *testing.T) {
 			f := setup()
 
 			note := Note{ID: "id", Title: "Title", Content: "Content"}

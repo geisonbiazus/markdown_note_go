@@ -13,10 +13,14 @@ func NewNoteInteractor(idGen IDGenerator) *NoteInteractor {
 	return &NoteInteractor{idGen}
 }
 
-func (i *NoteInteractor) CreateNote(title, content string) []cqrs.Event {
+func (i *NoteInteractor) CreateNote(title, content string) (Note, []cqrs.Event) {
 	builder := cqrs.NewEventsBuilder()
 	builder.Add(events.NoteCreatedEvent{ID: i.idGen.Generate(), Title: title, Content: content})
-	return builder.Events
+
+	note := new(Note)
+	note.ApplyEvents(builder.Events)
+
+	return *note, builder.Events
 }
 
 func (i *NoteInteractor) UpdateNote(note Note, title, content string) []cqrs.Event {
