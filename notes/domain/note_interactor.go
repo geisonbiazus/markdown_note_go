@@ -23,8 +23,11 @@ func (i *NoteInteractor) CreateNote(title, content string) (Note, []cqrs.Event) 
 	return *note, builder.Events
 }
 
-func (i *NoteInteractor) UpdateNote(note Note, title, content string) []cqrs.Event {
+func (i *NoteInteractor) UpdateNote(note Note, title, content string) (Note, []cqrs.Event) {
 	builder := cqrs.NewEventsBuilder()
 	builder.Add(events.NoteUpdatedEvent{ID: note.ID, Title: title, Content: content})
-	return builder.Events
+
+	(&note).ApplyEvents(builder.Events)
+
+	return note, builder.Events
 }

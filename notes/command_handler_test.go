@@ -79,32 +79,58 @@ func TestCommandHandler(t *testing.T) {
 				}, output)
 			})
 		})
-
 	})
 
 	t.Run("UpdateNote", func(t *testing.T) {
-		t.Run("Updates a note", func(t *testing.T) {
-			noteID := "NoteID"
+		t.Run("With valid arguments", func(t *testing.T) {
+			t.Run("Updates a note", func(t *testing.T) {
+				noteID := "NoteID"
 
-			f := setup()
-			f.idGenerator.NextID = noteID
+				f := setup()
+				f.idGenerator.NextID = noteID
 
-			f.handler.CreateNote(
-				commands.CreateNoteCommand{Title: "Title", Content: "Content"},
-			)
+				f.handler.CreateNote(
+					commands.CreateNoteCommand{Title: "Title", Content: "Content"},
+				)
 
-			f.handler.UpdateNote(
-				commands.UpdateNoteCommand{
-					ID:      noteID,
-					Title:   "NewTitle",
-					Content: "NewContent",
-				},
-			)
+				f.handler.UpdateNote(
+					commands.UpdateNoteCommand{
+						ID:      noteID,
+						Title:   "NewTitle",
+						Content: "NewContent",
+					},
+				)
 
-			assert.Equal(t, []cqrs.Event{
-				events.NoteCreatedEvent{ID: noteID, Title: "Title", Content: "Content"},
-				events.NoteUpdatedEvent{ID: noteID, Title: "NewTitle", Content: "NewContent"},
-			}, f.store.Events)
+				assert.Equal(t, []cqrs.Event{
+					events.NoteCreatedEvent{ID: noteID, Title: "Title", Content: "Content"},
+					events.NoteUpdatedEvent{ID: noteID, Title: "NewTitle", Content: "NewContent"},
+				}, f.store.Events)
+			})
+		})
+
+		t.Run("With invalid arguments", func(t *testing.T) {
+			t.Run("Returns the errors", func(t *testing.T) {
+				f := setup()
+
+				createNoteOutput := f.handler.CreateNote(
+					commands.CreateNoteCommand{Title: "Title", Content: "Content"},
+				)
+
+				output := f.handler.UpdateNote(
+					commands.UpdateNoteCommand{
+						ID:      createNoteOutput.ID,
+						Title:   "",
+						Content: "NewContent",
+					},
+				)
+
+				assert.Equal(t, UpdateNoteOutput{
+					Valid: false,
+					Errors: []validations.Error{
+						validations.Error{Field: "Title", Type: "REQUIRED"},
+					},
+				}, output)
+			})
 		})
 	})
 }

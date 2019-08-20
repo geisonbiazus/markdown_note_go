@@ -51,7 +51,7 @@ func TestNote(t *testing.T) {
 			)
 		})
 
-		t.Run("Multipl events", func(t *testing.T) {
+		t.Run("Multiple events", func(t *testing.T) {
 			note := EmptyNote
 
 			evts := []cqrs.Event{

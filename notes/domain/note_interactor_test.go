@@ -65,12 +65,27 @@ func TestNoteInteractor(t *testing.T) {
 			title := "New Title"
 			content := "New Content"
 
+			_, evts := f.interactor.UpdateNote(note, title, content)
+
 			assert.Equal(t,
 				[]cqrs.Event{
 					events.NoteUpdatedEvent{ID: note.ID, Title: title, Content: content},
 				},
-				f.interactor.UpdateNote(note, title, content),
+				evts,
 			)
+		})
+
+		t.Run("Returns the updated note", func(t *testing.T) {
+			f := setup()
+
+			note := Note{ID: "id", Title: "Title", Content: "Content"}
+
+			title := "New Title"
+			content := "New Content"
+
+			updatedNote, _ := f.interactor.UpdateNote(note, title, content)
+
+			assert.Equal(t, Note{ID: note.ID, Title: title, Content: content}, updatedNote)
 		})
 	})
 }
