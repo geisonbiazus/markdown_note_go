@@ -30,7 +30,8 @@ func (h *CommandHandler) CreateNote(cmd commands.CreateNoteCommand) CreateNoteOu
 		return h.createNote(cmd)
 	}
 
-	return h.invalidCreateNoteOutput(result)
+	return CreateNoteOutput{Valid: false, Errors: result.Errors}
+
 }
 
 func (h *CommandHandler) createNote(cmd commands.CreateNoteCommand) CreateNoteOutput {
@@ -38,10 +39,6 @@ func (h *CommandHandler) createNote(cmd commands.CreateNoteCommand) CreateNoteOu
 	h.repo.PublishEvents(evts)
 
 	return CreateNoteOutput{ID: note.ID, Valid: true}
-}
-
-func (h *CommandHandler) invalidCreateNoteOutput(result validations.Result) CreateNoteOutput {
-	return CreateNoteOutput{Valid: result.Valid, Errors: result.Errors}
 }
 
 type UpdateNoteOutput struct {
@@ -53,9 +50,17 @@ type UpdateNoteOutput struct {
 func (h *CommandHandler) UpdateNote(cmd commands.UpdateNoteCommand) UpdateNoteOutput {
 	result := cmd.Validate()
 
+	if result.Valid {
+		return h.updateNote(cmd)
+	}
+
+	return UpdateNoteOutput{Valid: false, Errors: result.Errors}
+}
+
+func (h *CommandHandler) updateNote(cmd commands.UpdateNoteCommand) UpdateNoteOutput {
 	note := h.repo.GetNoteByID(cmd.ID)
 	_, evts := h.noteInteractor.UpdateNote(note, cmd.Title, cmd.Content)
 	h.repo.PublishEvents(evts)
 
-	return UpdateNoteOutput{Valid: result.Valid, Errors: result.Errors}
+	return UpdateNoteOutput{Valid: true, ID: note.ID}
 }

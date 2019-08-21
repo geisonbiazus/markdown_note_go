@@ -50,7 +50,7 @@ func TestCommandHandler(t *testing.T) {
 				}, f.store.Events)
 			})
 
-			t.Run("Returns the output containing the ID o the created node", func(t *testing.T) {
+			t.Run("Returns the output containing the ID of the created node", func(t *testing.T) {
 				noteID := "ID"
 				f := setup()
 
@@ -106,6 +106,24 @@ func TestCommandHandler(t *testing.T) {
 					events.NoteUpdatedEvent{ID: noteID, Title: "NewTitle", Content: "NewContent"},
 				}, f.store.Events)
 			})
+
+			t.Run("Returns the output containing the updated note ID", func(t *testing.T) {
+				f := setup()
+
+				createNoteOutput := f.handler.CreateNote(
+					commands.CreateNoteCommand{Title: "Title", Content: "Content"},
+				)
+
+				output := f.handler.UpdateNote(
+					commands.UpdateNoteCommand{
+						ID:      createNoteOutput.ID,
+						Title:   "NewTitle",
+						Content: "NewContent",
+					},
+				)
+
+				assert.Equal(t, UpdateNoteOutput{Valid: true, ID: createNoteOutput.ID}, output)
+			})
 		})
 
 		t.Run("With invalid arguments", func(t *testing.T) {
@@ -130,6 +148,24 @@ func TestCommandHandler(t *testing.T) {
 						validations.Error{Field: "Title", Type: "REQUIRED"},
 					},
 				}, output)
+			})
+
+			t.Run("Does not publish events", func(t *testing.T) {
+				f := setup()
+
+				createNoteOutput := f.handler.CreateNote(
+					commands.CreateNoteCommand{Title: "Title", Content: "Content"},
+				)
+
+				f.handler.UpdateNote(
+					commands.UpdateNoteCommand{
+						ID:      createNoteOutput.ID,
+						Title:   "",
+						Content: "NewContent",
+					},
+				)
+
+				assert.NotContains(t, f.store.Events, events.NoteUpdatedEvent{ID: createNoteOutput.ID, Title: "", Content: "NewContent"})
 			})
 		})
 	})
