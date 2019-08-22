@@ -11,14 +11,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCommandHandler(t *testing.T) {
-	type fixture struct {
-		store       *cqrs.InMemoryEventStore
-		idGenerator *domain.FakeIDGenerator
-		handler     *CommandHandler
-	}
+type testCommandHandlerFixture struct {
+	store       *cqrs.InMemoryEventStore
+	idGenerator *domain.FakeIDGenerator
+	handler     *CommandHandler
+}
 
-	setup := func() *fixture {
+func TestCommandHandler(t *testing.T) {
+	setup := func() *testCommandHandlerFixture {
 		store := cqrs.NewInMemoryEventStore()
 		idGenerator := domain.NewFakeIdGenerator("ID")
 
@@ -26,7 +26,7 @@ func TestCommandHandler(t *testing.T) {
 			NewEventBasedNoteRepo(store),
 			domain.NewNoteInteractor(idGenerator),
 		)
-		return &fixture{
+		return &testCommandHandlerFixture{
 			store,
 			idGenerator,
 			handler,
@@ -41,9 +41,7 @@ func TestCommandHandler(t *testing.T) {
 
 				f.idGenerator.NextID = noteID
 
-				f.handler.CreateNote(
-					commands.CreateNoteCommand{Title: "Title", Content: "Content"},
-				)
+				createNote(f, "Title", "Content")
 
 				assert.Equal(t, []cqrs.Event{
 					events.NoteCreatedEvent{ID: noteID, Title: "Title", Content: "Content"},
@@ -56,9 +54,7 @@ func TestCommandHandler(t *testing.T) {
 
 				f.idGenerator.NextID = noteID
 
-				output := f.handler.CreateNote(
-					commands.CreateNoteCommand{Title: "Title", Content: "Content"},
-				)
+				output := createNote(f, "Title", "Content")
 
 				assert.Equal(t, CreateNoteOutput{Valid: true, ID: noteID}, output)
 			})
@@ -67,9 +63,7 @@ func TestCommandHandler(t *testing.T) {
 			t.Run("Returns the errors", func(t *testing.T) {
 				f := setup()
 
-				output := f.handler.CreateNote(
-					commands.CreateNoteCommand{Title: "", Content: "Content"},
-				)
+				output := createNote(f, "", "Content")
 
 				assert.Equal(t, CreateNoteOutput{
 					Valid: false,
@@ -84,45 +78,24 @@ func TestCommandHandler(t *testing.T) {
 	t.Run("UpdateNote", func(t *testing.T) {
 		t.Run("With valid arguments", func(t *testing.T) {
 			t.Run("Updates a note", func(t *testing.T) {
-				noteID := "NoteID"
-
 				f := setup()
-				f.idGenerator.NextID = noteID
 
-				f.handler.CreateNote(
-					commands.CreateNoteCommand{Title: "Title", Content: "Content"},
-				)
-
-				f.handler.UpdateNote(
-					commands.UpdateNoteCommand{
-						ID:      noteID,
-						Title:   "NewTitle",
-						Content: "NewContent",
-					},
-				)
+				createNoteOutput := createNote(f, "Title", "Content")
+				updateNote(f, createNoteOutput.ID, "NewTitle", "NewContent")
 
 				assert.Equal(t, []cqrs.Event{
-					events.NoteCreatedEvent{ID: noteID, Title: "Title", Content: "Content"},
-					events.NoteUpdatedEvent{ID: noteID, Title: "NewTitle", Content: "NewContent"},
+					events.NoteCreatedEvent{ID: createNoteOutput.ID, Title: "Title", Content: "Content"},
+					events.NoteUpdatedEvent{ID: createNoteOutput.ID, Title: "NewTitle", Content: "NewContent"},
 				}, f.store.Events)
 			})
 
 			t.Run("Returns the output containing the updated note ID", func(t *testing.T) {
 				f := setup()
 
-				createNoteOutput := f.handler.CreateNote(
-					commands.CreateNoteCommand{Title: "Title", Content: "Content"},
-				)
+				createNoteOutput := createNote(f, "Title", "Content")
+				updateNoteOutput := updateNote(f, createNoteOutput.ID, "NewTitle", "NewContent")
 
-				output := f.handler.UpdateNote(
-					commands.UpdateNoteCommand{
-						ID:      createNoteOutput.ID,
-						Title:   "NewTitle",
-						Content: "NewContent",
-					},
-				)
-
-				assert.Equal(t, UpdateNoteOutput{Valid: true, ID: createNoteOutput.ID}, output)
+				assert.Equal(t, UpdateNoteOutput{Valid: true, ID: createNoteOutput.ID}, updateNoteOutput)
 			})
 		})
 
@@ -130,43 +103,42 @@ func TestCommandHandler(t *testing.T) {
 			t.Run("Returns the errors", func(t *testing.T) {
 				f := setup()
 
-				createNoteOutput := f.handler.CreateNote(
-					commands.CreateNoteCommand{Title: "Title", Content: "Content"},
-				)
-
-				output := f.handler.UpdateNote(
-					commands.UpdateNoteCommand{
-						ID:      createNoteOutput.ID,
-						Title:   "",
-						Content: "NewContent",
-					},
-				)
+				createNoteOutput := createNote(f, "Title", "Content")
+				updateNoteOutput := updateNote(f, createNoteOutput.ID, "", "NewContent")
 
 				assert.Equal(t, UpdateNoteOutput{
 					Valid: false,
 					Errors: []validations.Error{
 						validations.Error{Field: "Title", Type: "REQUIRED"},
 					},
-				}, output)
+				}, updateNoteOutput)
 			})
 
 			t.Run("Does not publish events", func(t *testing.T) {
 				f := setup()
 
-				createNoteOutput := f.handler.CreateNote(
-					commands.CreateNoteCommand{Title: "Title", Content: "Content"},
-				)
+				createNoteOutput := createNote(f, "Title", "Content")
 
-				f.handler.UpdateNote(
-					commands.UpdateNoteCommand{
-						ID:      createNoteOutput.ID,
-						Title:   "",
-						Content: "NewContent",
-					},
-				)
+				updateNote(f, createNoteOutput.ID, "", "NewContent")
 
 				assert.NotContains(t, f.store.Events, events.NoteUpdatedEvent{ID: createNoteOutput.ID, Title: "", Content: "NewContent"})
 			})
 		})
 	})
+}
+
+func createNote(f *testCommandHandlerFixture, title, content string) CreateNoteOutput {
+	return f.handler.CreateNote(
+		commands.CreateNoteCommand{Title: title, Content: content},
+	)
+}
+
+func updateNote(f *testCommandHandlerFixture, id, title, content string) UpdateNoteOutput {
+	return f.handler.UpdateNote(
+		commands.UpdateNoteCommand{
+			ID:      id,
+			Title:   title,
+			Content: content,
+		},
+	)
 }
