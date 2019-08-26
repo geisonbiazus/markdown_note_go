@@ -77,6 +77,26 @@ func TestEventBasedNoteRepo(t *testing.T) {
 				ID: "id", Title: "new title", Content: "new content",
 			}, repo.GetNoteByID("id"))
 		})
+
+		t.Run("Return the correct note when events from more than are note is stored", func(t *testing.T) {
+			store := cqrs.NewInMemoryEventStore()
+			repo := NewEventBasedNoteRepo(store)
+
+			store.AddEvent(
+				events.NoteCreatedEvent{ID: "1", Title: "title", Content: "content"},
+			)
+
+			store.AddEvent(
+				events.NoteCreatedEvent{ID: "2", Title: "other title", Content: "other content"},
+			)
+
+			store.AddEvent(
+				events.NoteUpdatedEvent{ID: "1", Title: "new title", Content: "new content"},
+			)
+
+			assert.Equal(t, domain.Note{ID: "1", Title: "new title", Content: "new content"}, repo.GetNoteByID("1"))
+			assert.Equal(t, domain.Note{ID: "2", Title: "other title", Content: "other content"}, repo.GetNoteByID("2"))
+		})
 	})
 }
 
@@ -92,6 +112,10 @@ func (s *ErrorReturningEventStore) AddEvent(event cqrs.Event) error {
 	return s.Error
 }
 
-func (s *ErrorReturningEventStore) ReadEvents() ([]cqrs.Event, error) {
+func (s *ErrorReturningEventStore) ReadAllEvents() ([]cqrs.Event, error) {
+	return []cqrs.Event{}, s.Error
+}
+
+func (s *ErrorReturningEventStore) ReadEventsByID(id string) ([]cqrs.Event, error) {
 	return []cqrs.Event{}, s.Error
 }

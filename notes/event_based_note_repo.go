@@ -24,7 +24,7 @@ func (r *EventBasedNoteRepo) PublishEvents(evts []cqrs.Event) error {
 }
 
 func (r *EventBasedNoteRepo) GetNoteByID(id string) domain.Note {
-	evts, _ := r.eventStore.ReadEvents()
+	evts, _ := r.eventStore.ReadEventsByID(id)
 
 	note := domain.NewNote()
 	(&note).ApplyEvents(evts)

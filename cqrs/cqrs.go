@@ -1,8 +1,11 @@
 package cqrs
 
-type Event interface{}
+type Event interface {
+	GetID() string
+}
 
 type EventStore interface {
 	AddEvent(event Event) error
-	ReadEvents() ([]Event, error)
+	ReadAllEvents() ([]Event, error)
+	ReadEventsByID(id string) ([]Event, error)
 }
